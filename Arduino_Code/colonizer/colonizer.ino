@@ -1,3 +1,11 @@
+/*
+TODO
+Add endpoint sensors
+Add more advanced control structure
+Add serial comms
+Implement data structure
+*/
+
 #include <Stepper.h>
 
 enum state{Standby, Running, Done} myState;
