@@ -1,9 +1,23 @@
-typedef struct command
+/*
+TODO:
+Add serial reception
+Add command-based motor starting
+Add speed changing?
+Test everything
+*/
+
+enum actions {HOME, MOVE_FOR_CAMERA, PICKUP_COLONY, PLACE_COLONY, CUT_COLONY, HALT};
+
+typedef struct location
 {
-	enum actions {HOME, MOVE_FOR_CAMERA, PICKUP_COLONY, PLACE_COLONY, CUT_COLONY, HALT};
-	actions action;	
 	double xCoordinate;
 	double yCoordinate;
+}
+
+typedef struct command
+{
+	actions operation;	
+	location targetLocation;
 }
 
 #include "A4988.h"
@@ -68,8 +82,6 @@ bool xComplete = false;
 bool yComplete = false;
 bool zComplete = false;
 bool eComplete = false;
-bool 
-
 
 A4988 xMotor(X_STEPS, X_DIR, X_STEP, X_ENABLE, X_MS1, X_MS2, X_MS3);
 A4988 yMotor(Y_STEPS, Y_DIR, Y_STEP, Y_ENABLE, Y_MS1, Y_MS2, Y_MS3);
@@ -77,6 +89,7 @@ A4988 zMotor(Z_STEPS, Z_DIR, Z_STEP, Z_ENABLE, Z_MS1, Z_MS2, Z_MS3);
 A4988 eMotor(E_STEPS, E_DIR, E_STEP, E_ENABLE, E_MS1, E_MS2, E_MS3);
 
 command currentCommand;
+location currentLocation;
 
 void setup() {
 	Serial.begin(9600);
@@ -110,6 +123,7 @@ void loop() {
  	if(!eMotor.nextAction()) {
 		eComplete = true;
 	}
+	
 }
 
 void getCommand(command *c) {
