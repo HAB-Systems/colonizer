@@ -127,5 +127,5 @@ void loop() {
 }
 
 void getCommand(command *c) {
-	
+	c->action = Serial.read();
 }
