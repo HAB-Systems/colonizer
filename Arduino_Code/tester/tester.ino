@@ -1,26 +1,28 @@
 /*
-TODO:
-Add serial reception
-Add command-based motor starting
-Add speed changing?
-Test everything
+  TODO:
+  Add serial reception
+  Add command-based motor starting
+  Add speed changing?
+  Test everything
 */
 
 enum actions {HOME, MOVE_FOR_CAMERA, PICKUP_COLONY, PLACE_COLONY, CUT_COLONY, HALT};
 
 typedef struct location
 {
-	double xCoordinate;
-	double yCoordinate;
-}
+  double xCoordinate;
+  double yCoordinate;
+};
 
 typedef struct command
 {
-	actions operation;	
-	location targetLocation;
-}
+  actions operation;
+  location targetLocation;
+};
 
 #include "A4988.h"
+#include "MultiDriver.h"
+#include "SyncDriver.h"
 
 #define X_MOTOR_STEPS 200
 #define X_RPM 100
@@ -36,9 +38,9 @@ typedef struct command
 #define Y_MOTOR_STEPS 200
 #define Y_RPM 100
 #define Y_MICROSTEPS 1
-#define Y_DIR 55
-#define Y_STEP 54
-#define Y_ENABLE 38
+#define Y_DIR 60
+#define Y_STEP 61
+#define Y_ENABLE 56
 #define Y_MS1 10
 #define Y_MS2 11
 #define Y_MS3 12
@@ -47,9 +49,9 @@ typedef struct command
 #define Z_MOTOR_STEPS 200
 #define Z_RPM 100
 #define Z_MICROSTEPS 1
-#define Z_DIR 55
-#define Z_STEP 54
-#define Z_ENABLE 38
+#define Z_DIR 48
+#define Z_STEP 46
+#define Z_ENABLE 62
 #define Z_MS1 10
 #define Z_MS2 11
 #define Z_MS3 12
@@ -58,9 +60,9 @@ typedef struct command
 #define E_MOTOR_STEPS 200
 #define E_RPM 100
 #define E_MICROSTEPS 1
-#define E_DIR 55
-#define E_STEP 54
-#define E_ENABLE 38
+#define E_DIR 28
+#define E_STEP 26
+#define E_ENABLE 24
 #define E_MS1 10
 #define E_MS2 11
 #define E_MS3 12
@@ -83,49 +85,64 @@ bool yComplete = false;
 bool zComplete = false;
 bool eComplete = false;
 
-A4988 xMotor(X_STEPS, X_DIR, X_STEP, X_ENABLE, X_MS1, X_MS2, X_MS3);
-A4988 yMotor(Y_STEPS, Y_DIR, Y_STEP, Y_ENABLE, Y_MS1, Y_MS2, Y_MS3);
-A4988 zMotor(Z_STEPS, Z_DIR, Z_STEP, Z_ENABLE, Z_MS1, Z_MS2, Z_MS3);
-A4988 eMotor(E_STEPS, E_DIR, E_STEP, E_ENABLE, E_MS1, E_MS2, E_MS3);
+double xPosition;
+double yPosition;
+double zPosition;
+double ePosition;
+
+A4988 xMotor(X_MOTOR_STEPS, X_DIR, X_STEP, X_ENABLE, X_MS1, X_MS2, X_MS3);
+A4988 yMotor(Y_MOTOR_STEPS, Y_DIR, Y_STEP, Y_ENABLE, Y_MS1, Y_MS2, Y_MS3);
+A4988 zMotor(Z_MOTOR_STEPS, Z_DIR, Z_STEP, Z_ENABLE, Z_MS1, Z_MS2, Z_MS3);
+A4988 eMotor(E_MOTOR_STEPS, E_DIR, E_STEP, E_ENABLE, E_MS1, E_MS2, E_MS3);
+
+MultiDriver xyController(xMotor, zMotor);
+MultiDriver zeController(yMotor, eMotor);
 
 command currentCommand;
 location currentLocation;
 
 void setup() {
-	Serial.begin(9600);
-    xMotor.begin(X_RPM, X_MICROSTEPS);
-    yMotor.begin(Y_RPM, Y_MICROSTEPS);
-    zMotor.begin(Z_RPM, Z_MICROSTEPS);
-    eMotor.begin(E_RPM, E_MICROSTEPS);
-    xMotor.enable();
-    xMotor.setSpeedProfile(xMotor.LINEAR_SPEED, X_ACCEL, X_DECEL);
-    yMotor.enable();
-    yMotor.setSpeedProfile(yMotor.LINEAR_SPEED, Y_ACCEL, Y_DECEL);
-    zMotor.enable();
-    zMotor.setSpeedProfile(zMotor.LINEAR_SPEED, Z_ACCEL, Z_DECEL);
-    eMotor.enable();
-    eMotor.setSpeedProfile(eMotor.LINEAR_SPEED, E_ACCEL, E_DECEL);
+  Serial.begin(9600);
+  xMotor.begin(X_RPM, X_MICROSTEPS);
+  yMotor.begin(Y_RPM, Y_MICROSTEPS);
+  zMotor.begin(Z_RPM, Z_MICROSTEPS);
+  eMotor.begin(E_RPM, E_MICROSTEPS);
+  xMotor.enable();
+  xMotor.setSpeedProfile(xMotor.LINEAR_SPEED, X_ACCEL, X_DECEL);
+  yMotor.enable();
+  yMotor.setSpeedProfile(yMotor.LINEAR_SPEED, Y_ACCEL, Y_DECEL);
+  zMotor.enable();
+  zMotor.setSpeedProfile(zMotor.LINEAR_SPEED, Z_ACCEL, Z_DECEL);
+  eMotor.enable();
+  eMotor.setSpeedProfile(eMotor.LINEAR_SPEED, E_ACCEL, E_DECEL);
 }
 
 void loop() {
- 	if(Serial.available()) {
-		getCommand(&currentCommand);
-	}
-	if(!xMotor.nextAction()) {
-		xComplete = true;
-	}
- 	if(!yMotor.nextAction()) {
-		yComplete = true;
-	}
- 	if(!zMotor.nextAction()) {
-		zComplete = true;
-	}
- 	if(!eMotor.nextAction()) {
-		eComplete = true;
-	}
-	
+  if (Serial.available()) {
+    getCommand();
+  }
+  if (!xMotor.nextAction()) {
+    xComplete = true;
+  }
+  if (!yMotor.nextAction()) {
+    yComplete = true;
+  }
+  if (!zMotor.nextAction()) {
+    zComplete = true;
+  }
+  if (!eMotor.nextAction()) {
+    eComplete = true;
+  }
 }
 
-void getCommand(command *c) {
-	c->action = Serial.read();
+void getCommand() {
+  //c->operation = Serial.read();
+  Serial.println("Checking it");
+  int x = Serial.parseInt();
+  int z = Serial.parseInt();
+  Serial.print(x); Serial.print(", "); Serial.println(z);
+  Serial.println("On it");
+  xyController.rotate(x, z);
 }
+
+void moveCarrige()
