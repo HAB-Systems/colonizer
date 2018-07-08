@@ -1,20 +1,20 @@
 /*
   TODO:
-  Add serial reception
-  Add command-based motor starting
   Add speed changing?
   Test everything
 */
 
 enum actions {HOME, MOVE_FOR_CAMERA, PICKUP_COLONY, PLACE_COLONY, CUT_COLONY, HALT};
 
-typedef struct location
+struct location
 {
   double xCoordinate;
   double yCoordinate;
+  double zCoordinate;
+  double eCoordinate;
 };
 
-typedef struct command
+struct command
 {
   actions operation;
   location targetLocation;
@@ -99,7 +99,12 @@ MultiDriver xyController(xMotor, zMotor);
 MultiDriver zeController(yMotor, eMotor);
 
 command currentCommand;
-location currentLocation;
+location currentLocation = {0.0, 0.0, 0.0, 0.0};
+location cutter;
+location clearOfCamera;
+location home = {0.0, 0.0, 0.0, 0.0};
+currentLocation = home;
+bool done = false;
 
 void setup() {
   Serial.begin(9600);
@@ -120,21 +125,17 @@ void setup() {
 void loop() {
   if (Serial.available()) {
     getCommand();
+    done = false;
   }
-  if (!xMotor.nextAction()) {
-    xComplete = true;
+  if (!done && !xyController.isRunning() && !zeController.isRunning()) {
+    done = true;
   }
-  if (!yMotor.nextAction()) {
-    yComplete = true;
-  }
-  if (!zMotor.nextAction()) {
-    zComplete = true;
-  }
-  if (!eMotor.nextAction()) {
-    eComplete = true;
+  if (done) {
+    sendDoneSignal();
   }
 }
 
+/*
 void getCommand() {
   //c->operation = Serial.read();
   Serial.println("Checking it");
@@ -144,5 +145,49 @@ void getCommand() {
   Serial.println("On it");
   xyController.rotate(x, z);
 }
+*/
 
-void moveCarrige()
+void getCommand() {
+  currentCommand.operation = Serial.parseInt();
+  switch(currentCommand.operation) {
+    case HOME:
+      currentCommand.targetLocation = hom;
+      break;
+    case MOVE_FOR_CAMERA:
+      currentCommand.targetLocation = clearOfCamera;
+      break;
+    case PICKUP_COLONY:
+      currentCommand.targetLocation.xCoordinate = Serial.parseFloat();
+      currentCommand.targetLocation.yCoordinate = Serial.parseFloat();
+      currentCommand.targetLocation.zCoordinate = Serial.parseFloat();
+      currentCommand.targetLocation.eCoordinate = Serial.parseFloat();
+      break;
+    case PLACE_COLONY:
+      currentCommand.targetLocation.xCoordinate = Serial.parseFloat();
+      currentCommand.targetLocation.yCoordinate = Serial.parseFloat();
+      currentCommand.targetLocation.zCoordinate = Serial.parseFloat();
+      currentCommand.targetLocation.eCoordinate = Serial.parseFloat();
+      break; 
+    case CUT_COLONY:
+      currentCommand.targetLocation = cutter;
+      break;
+    case HALT:
+      currentCommand.targetLocation = currentLocation;
+      break;
+  }
+  moveEffector();
+  moveCarrige();
+}
+
+void sendDoneSignal() {
+  Serial.write(0b1000101);
+}
+
+void moveCarrige() {
+  xyController.rotate(0, 0);
+}
+
+void moveEffector() {
+  zeController.rotate(0, 0);
+}
+
