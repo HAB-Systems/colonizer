@@ -103,7 +103,6 @@ location currentLocation = {0.0, 0.0, 0.0, 0.0};
 location cutter;
 location clearOfCamera;
 location home = {0.0, 0.0, 0.0, 0.0};
-currentLocation = home;
 bool done = false;
 
 void setup() {
@@ -151,7 +150,7 @@ void getCommand() {
   currentCommand.operation = Serial.parseInt();
   switch(currentCommand.operation) {
     case HOME:
-      currentCommand.targetLocation = hom;
+      currentCommand.targetLocation = home;
       break;
     case MOVE_FOR_CAMERA:
       currentCommand.targetLocation = clearOfCamera;
