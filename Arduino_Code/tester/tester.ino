@@ -3,7 +3,8 @@
   Add speed changing?
   Test everything
 */
-
+//Xmax = 2600 degrees
+//Ymax = 3300 degrees
 enum actions {HOME, MOVE_FOR_CAMERA, PICKUP_COLONY, PLACE_COLONY, CUT_COLONY, HALT};
 
 struct location
@@ -25,7 +26,7 @@ struct command
 #include "SyncDriver.h"
 
 #define X_MOTOR_STEPS 200
-#define X_RPM 100
+#define X_RPM 150
 #define X_MICROSTEPS 1
 #define X_DIR 55
 #define X_STEP 54
@@ -36,7 +37,7 @@ struct command
 #define X_STEPS_MM 100
 
 #define Y_MOTOR_STEPS 200
-#define Y_RPM 100
+#define Y_RPM 150
 #define Y_MICROSTEPS 1
 #define Y_DIR 60
 #define Y_STEP 61
@@ -47,7 +48,7 @@ struct command
 #define Y_STEPS_MM 100
 
 #define Z_MOTOR_STEPS 200
-#define Z_RPM 100
+#define Z_RPM 150
 #define Z_MICROSTEPS 1
 #define Z_DIR 48
 #define Z_STEP 46
@@ -58,7 +59,7 @@ struct command
 #define Z_STEPS_MM 100
 
 #define E_MOTOR_STEPS 200
-#define E_RPM 100
+#define E_RPM 150
 #define E_MICROSTEPS 1
 #define E_DIR 28
 #define E_STEP 26
@@ -122,6 +123,9 @@ void setup() {
 }
 
 void loop() {
+  Serial.print(currentLocation.xCoordinate);
+  Serial.print(", ");
+  Serial.println(currentLocation.yCoordinate);
   if (Serial.available()) {
     getCommand();
     done = false;
@@ -134,23 +138,11 @@ void loop() {
   }
 }
 
-/*
-void getCommand() {
-  //c->operation = Serial.read();
-  Serial.println("Checking it");
-  int x = Serial.parseInt();
-  int z = Serial.parseInt();
-  Serial.print(x); Serial.print(", "); Serial.println(z);
-  Serial.println("On it");
-  xyController.rotate(x, z);
-}
-*/
-
 void getCommand() {
   currentCommand.operation = Serial.parseInt();
-  switch(currentCommand.operation) {
+  switch (currentCommand.operation) {
     case HOME:
-      currentCommand.targetLocation = home;
+      home = currentCommand.targetLocation;
       break;
     case MOVE_FOR_CAMERA:
       currentCommand.targetLocation = clearOfCamera;
@@ -166,7 +158,7 @@ void getCommand() {
       currentCommand.targetLocation.yCoordinate = Serial.parseFloat();
       currentCommand.targetLocation.zCoordinate = Serial.parseFloat();
       currentCommand.targetLocation.eCoordinate = Serial.parseFloat();
-      break; 
+      break;
     case CUT_COLONY:
       currentCommand.targetLocation = cutter;
       break;
@@ -176,6 +168,8 @@ void getCommand() {
   }
   moveEffector();
   moveCarrige();
+  currentLocation.xCoordinate = currentCommand.targetLocation.xCoordinate;
+  currentLocation.yCoordinate = currentCommand.targetLocation.yCoordinate;
 }
 
 void sendDoneSignal() {
@@ -183,10 +177,9 @@ void sendDoneSignal() {
 }
 
 void moveCarrige() {
-  xyController.rotate(0, 0);
+  xyController.rotate(currentCommand.targetLocation.xCoordinate - currentLocation.xCoordinate, currentCommand.targetLocation.yCoordinate - currentLocation.yCoordinate);
 }
 
 void moveEffector() {
-  zeController.rotate(0, 0);
+  zeController.rotate(currentCommand.targetLocation.zCoordinate - currentLocation.zCoordinate, currentCommand.targetLocation.eCoordinate - currentLocation.eCoordinate);
 }
-
