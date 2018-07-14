@@ -1,2 +1,3 @@
 all:
-	g++ test.cpp -o test `pkg-config --cflags --libs opencv`
+	g++ calibrate.cpp -o cal `pkg-config --cflags --libs opencv`
+	g++ loadCalibration.cpp -o load `pkg-config --cflags --libs opencv`

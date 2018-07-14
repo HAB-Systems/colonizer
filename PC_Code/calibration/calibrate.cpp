@@ -89,9 +89,11 @@ bool saveCameraCalibration(string name, Mat cameraMatrix, Mat distanceCoefficien
 		uint16_t rows = cameraMatrix.rows;
 		uint16_t columns = cameraMatrix.cols;
 
-		//writes cameraMatrix data to file
+		//writes cameraMatrix dimensions to file
+		outStream << rows << endl;
+		outStream << columns << endl;
 
-		outStream << "Calibration matrix" << endl;
+		//writes cameraMatrix data to file
 		for(int r = 0; r < rows; r++){
 			for(int c = 0; c < columns; c++)
 			{
@@ -103,8 +105,11 @@ bool saveCameraCalibration(string name, Mat cameraMatrix, Mat distanceCoefficien
 		rows = distanceCoefficients.rows;
 		columns = distanceCoefficients.cols;
 
+		//writes distnce coefficients dimensions to file
+		outStream << rows << endl;
+		outStream << columns << endl;
+		//
 		//writes distance coefficients to file
-		outStream << "distance coefficients" << endl;
 		for(int r = 0; r < rows; r++){
 			for(int c = 0; c < columns; c++)
 			{
@@ -120,6 +125,23 @@ bool saveCameraCalibration(string name, Mat cameraMatrix, Mat distanceCoefficien
 	return false;
 }
 
+
+//writes found points to output file
+/********
+void writeFoundPoints(vector<Vec2f> foundPoints){
+	ofstream outStream;
+	if(outStream)
+	{
+		outStream.open("foundPoints.txt");	
+		for(int r = 0; r < foundPoints.rows; r++){
+			for(int c = 0; c < foundPoints.cols; c++){
+				outStream << "(" << foundPoints.at<double>(r,c);	
+			}
+		}
+
+}
+*/
+
 int main(int argv, char** argc){
 	Mat frame;
 	Mat drawToFrame;
@@ -133,7 +155,7 @@ int main(int argv, char** argc){
 	
 	vector<vector<Point2f> > markerCorners, rejectedCandidates;
 	
-	VideoCapture vid(1); //webcam
+	VideoCapture vid(0); //webcam
 
 	if(!vid.isOpened()){
 		cout << "It ain't work B";
@@ -145,9 +167,9 @@ int main(int argv, char** argc){
 	namedWindow("webcam", CV_WINDOW_AUTOSIZE);
 	vector<Vec2f> foundPoints;
 
+	bool finished = false;
 
-
-	while(true){
+	while(!finished){
 		if(!vid.read(frame))
 			break;
 		
@@ -189,14 +211,22 @@ int main(int argv, char** argc){
 				cout << "camera calibrated" << endl;
 				saveCameraCalibration(exportFileName, cameraMatrix, distanceCoefficients);
 				cout << "calibration saved" << endl;
+				finished = true;
 				break;
 			case 27: //Esc
 				//bad results, so terminate program
 				return 0;
-				break;
 		}
 		
 	}
+
+	imshow("unmodified", frame);
+
+	Mat modified = frame.clone();
+	undistort(modified, frame, cameraMatrix, distanceCoefficients);
+
+	imshow("modified", modified);
+	waitKey();
 	
 	return 0;	
 }
