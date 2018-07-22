@@ -1,15 +1,28 @@
+/*/////////////////////////////
+thoroughly plagiarized from https://www.youtube.com/watch?v=v7jutAmWJVQ&list=PLAp0ZhYvW6XbEveYeefGSuLhaPlFML9gP&index=16 and following videos
+
+interactive process to find the camera matrix and distance coefficients of your camera.
+User prints out pattern.png chessboard at https://docs.opencv.org/2.4/_downloads/pattern.png.
+Hold image in front of camera.
+If program successfully draws points on corners of squares, press space to save image.
+Press enter to complete calibration once you have saved 10-15 good images from different angles.
+Program will use all images to determine camera matrix and distance coefficients 
+and writes these values to a file for use by loadCalibration.cpp.
+*////////////////////////////////
+
 #include "opencv2/opencv.hpp"
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
-//#include "opencv2/aruco.hpp"
 #include "opencv2/calib3d.hpp"
 
 #include <stdint.h>
 #include <sstream>
 #include <iostream>
 #include <fstream>
+
+#include "filenames.h"
 
 using namespace cv;
 using namespace std;
@@ -147,7 +160,6 @@ int main(int argv, char** argc){
 	Mat drawToFrame;
 	Mat cameraMatrix = Mat::eye(3,3, CV_64F);
 	char character;
-	string exportFileName = "calibration";
 
 	Mat distanceCoefficients;
 	
@@ -209,7 +221,7 @@ int main(int argv, char** argc){
 				cout << "calibration started" << endl;
 				cameraCalibration(savedImages, chessboardDimensions, calSquareEdge, cameraMatrix, distanceCoefficients);
 				cout << "camera calibrated" << endl;
-				saveCameraCalibration(exportFileName, cameraMatrix, distanceCoefficients);
+				saveCameraCalibration(CALIBRATION_FILE, cameraMatrix, distanceCoefficients);
 				cout << "calibration saved" << endl;
 				finished = true;
 				break;
@@ -220,13 +232,6 @@ int main(int argv, char** argc){
 		
 	}
 
-	imshow("unmodified", frame);
-
-	Mat modified = frame.clone();
-	undistort(modified, frame, cameraMatrix, distanceCoefficients);
-
-	imshow("modified", modified);
-	waitKey();
 	
 	return 0;	
 }

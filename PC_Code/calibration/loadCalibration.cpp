@@ -3,13 +3,14 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
-//#include "opencv2/aruco.hpp"
 #include "opencv2/calib3d.hpp"
 
 #include <stdint.h>
 #include <sstream>
 #include <iostream>
 #include <fstream>
+
+#include "filenames.h"
 
 using namespace cv;
 using namespace std;
@@ -72,6 +73,25 @@ int main()
 	Mat cameraMatrix;
 	Mat distanceCoefficients;
 
-	loadCameraCalibration("calibration.txt", cameraMatrix, distanceCoefficients);
+	//reads cameraMatrix and distanceCoefficients from the file created by calibrate.cpp
+	loadCameraCalibration(CALIBRATION_FILE, cameraMatrix, distanceCoefficients);
+
+	//reads original image from file
+	Mat distorted = imread(DISTORTED_IMAGE, CV_LOAD_IMAGE_COLOR);
+
+	//shows original (before correction) image
+	imshow("distorted", distorted);
+
+	Mat corrected = distorted.clone();
+
+	//undistorts distorted and populates result to corrected
+	undistort(distorted, corrected, cameraMatrix, distanceCoefficients);
+
+	//saves corrected image as a file
+	imwrite(CORRECTED_IMAGE, corrected);
+	
+	//shows corrected image
+	imshow("corrected", corrected);
+	waitKey();
 
 }
