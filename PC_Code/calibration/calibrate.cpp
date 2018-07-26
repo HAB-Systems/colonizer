@@ -27,7 +27,6 @@ and writes these values to a file for use by loadCalibration.cpp.
 using namespace cv;
 using namespace std;
 
-const float calSquareEdge = 0.0273f;
 const Size chessboardDimensions = Size(6,9);
 
 /*populates "corners" vector with a vector of 3d points representing where the corners are in the real world
@@ -167,14 +166,14 @@ int main(int argv, char** argc){
 	
 	vector<vector<Point2f> > markerCorners, rejectedCandidates;
 	
-	VideoCapture vid(0); //webcam
+	VideoCapture vid(1); //webcam
 
 	if(!vid.isOpened()){
-		cout << "It ain't work B";
+		cout << "It ain't work B" << endl;
 		return 0;
 	}
 
-	int framesPerSecond = 20;
+	int framesPerSecond = 50;
 
 	namedWindow("webcam", CV_WINDOW_AUTOSIZE);
 	vector<Vec2f> foundPoints;
@@ -203,6 +202,7 @@ int main(int argv, char** argc){
 
 		//if key is pressed, react, otherwise wait 1000/fps milliseconds
 		char character = waitKey(1000 / framesPerSecond);
+
 	
 		//action depends on which key was pressed
 		switch(character)
@@ -219,7 +219,7 @@ int main(int argv, char** argc){
 			case 13: //enter
 				//finished collecting images, so start calibration	
 				cout << "calibration started" << endl;
-				cameraCalibration(savedImages, chessboardDimensions, calSquareEdge, cameraMatrix, distanceCoefficients);
+				cameraCalibration(savedImages, chessboardDimensions, CAL_SQUARE_EDGE, cameraMatrix, distanceCoefficients);
 				cout << "camera calibrated" << endl;
 				saveCameraCalibration(CALIBRATION_FILE, cameraMatrix, distanceCoefficients);
 				cout << "calibration saved" << endl;

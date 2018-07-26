@@ -15,9 +15,6 @@
 using namespace cv;
 using namespace std;
 
-//real distance between corners
-const float realCornerDistance = 0.5; //cm
-
 //chessboard has 6x6 array of corners
 const int numrows = 9;		
 const int numcols = 6;		
@@ -115,7 +112,7 @@ int main()
    	cout << "Average:\t" << averageDistance << endl;	
 
 	//divides by real distance between corners to find pixels per cm 
-	float pixelsPerCm = averageDistance/realCornerDistance;
+	float pixelsPerCm = averageDistance/CAL_SQUARE_EDGE;
    	cout << "Pixels per cm:\t" << pixelsPerCm << endl;	
 
 
