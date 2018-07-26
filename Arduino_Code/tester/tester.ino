@@ -3,6 +3,7 @@
   Add speed changing?
   Test everything
 */
+
 //Xmax = 2600 degrees
 //Ymax = 3300 degrees
 enum actions {HOME, MOVE_FOR_CAMERA, PICKUP_COLONY, PLACE_COLONY, CUT_COLONY, HALT};
@@ -142,7 +143,7 @@ void getCommand() {
   currentCommand.operation = Serial.parseInt();
   switch (currentCommand.operation) {
     case HOME:
-      home = currentCommand.targetLocation;
+      currentCommand.targetLocation = home;
       break;
     case MOVE_FOR_CAMERA:
       currentCommand.targetLocation = clearOfCamera;
@@ -166,8 +167,12 @@ void getCommand() {
       currentCommand.targetLocation = currentLocation;
       break;
   }
-  moveEffector();
   moveCarrige();
+  moveEffector();
+  currentLocation.xCoordinate = currentCommand.targetLocation.xCoordinate;
+  currentLocation.yCoordinate = currentCommand.targetLocation.yCoordinate;
+  currentLocation.xCoordinate = currentCommand.targetLocation.xCoordinate;
+  currentLocation.yCoordinate = currentCommand.targetLocation.yCoordinate;
   currentLocation.xCoordinate = currentCommand.targetLocation.xCoordinate;
   currentLocation.yCoordinate = currentCommand.targetLocation.yCoordinate;
 }
