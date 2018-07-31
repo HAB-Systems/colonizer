@@ -4,8 +4,11 @@
   Test everything
 */
 
-//Xmax = 2600 degrees
-//Ymax = 3300 degrees
+//Xmax = 75000
+//Ymax = 60000
+//Zmax = 6500
+//Emax = 
+
 enum actions {HOME, MOVE_FOR_CAMERA, PICKUP_COLONY, PLACE_COLONY, CUT_COLONY, HALT};
 
 struct location
@@ -27,7 +30,7 @@ struct command
 #include "SyncDriver.h"
 
 #define X_MOTOR_STEPS 200
-#define X_RPM 150
+#define X_RPM 200
 #define X_MICROSTEPS 1
 #define X_DIR 55
 #define X_STEP 54
@@ -35,29 +38,29 @@ struct command
 #define X_MS1 10
 #define X_MS2 11
 #define X_MS3 12
-#define X_STEPS_MM 100
+#define X_REVS_PER_MM 0.03125
 
 #define Y_MOTOR_STEPS 200
 #define Y_RPM 150
 #define Y_MICROSTEPS 1
-#define Y_DIR 60
-#define Y_STEP 61
-#define Y_ENABLE 56
+#define Y_DIR 48
+#define Y_STEP 46
+#define Y_ENABLE 62
 #define Y_MS1 10
 #define Y_MS2 11
 #define Y_MS3 12
-#define Y_STEPS_MM 100
+#define Y_REVS_PER_MM 0.03125
 
 #define Z_MOTOR_STEPS 200
 #define Z_RPM 150
 #define Z_MICROSTEPS 1
-#define Z_DIR 48
-#define Z_STEP 46
-#define Z_ENABLE 62
+#define Z_DIR 34
+#define Z_STEP 36
+#define Z_ENABLE 30
 #define Z_MS1 10
 #define Z_MS2 11
 #define Z_MS3 12
-#define Z_STEPS_MM 100
+#define Z_REVS_PER_MM 0.5
 
 #define E_MOTOR_STEPS 200
 #define E_RPM 150
@@ -68,7 +71,7 @@ struct command
 #define E_MS1 10
 #define E_MS2 11
 #define E_MS3 12
-#define E_STEPS_MM 100
+#define E_REVS_PER_MM 0.028937287
 
 const int X_ACCEL = 1000;
 const int X_DECEL = 1000;
@@ -97,13 +100,13 @@ A4988 yMotor(Y_MOTOR_STEPS, Y_DIR, Y_STEP, Y_ENABLE, Y_MS1, Y_MS2, Y_MS3);
 A4988 zMotor(Z_MOTOR_STEPS, Z_DIR, Z_STEP, Z_ENABLE, Z_MS1, Z_MS2, Z_MS3);
 A4988 eMotor(E_MOTOR_STEPS, E_DIR, E_STEP, E_ENABLE, E_MS1, E_MS2, E_MS3);
 
-MultiDriver xyController(xMotor, zMotor);
-MultiDriver zeController(yMotor, eMotor);
+MultiDriver xyController(xMotor, yMotor);
+MultiDriver zeController(zMotor, eMotor);
 
 command currentCommand;
 location currentLocation = {0.0, 0.0, 0.0, 0.0};
-location cutter;
-location clearOfCamera;
+location cutter = {0.0, 0.0, 0.0, 0.0};
+location cameraInView = {0.0, 0.0, 0.0, 0.0};
 location home = {0.0, 0.0, 0.0, 0.0};
 bool done = false;
 
@@ -124,9 +127,6 @@ void setup() {
 }
 
 void loop() {
-  Serial.print(currentLocation.xCoordinate);
-  Serial.print(", ");
-  Serial.println(currentLocation.yCoordinate);
   if (Serial.available()) {
     getCommand();
     done = false;
@@ -146,7 +146,7 @@ void getCommand() {
       currentCommand.targetLocation = home;
       break;
     case MOVE_FOR_CAMERA:
-      currentCommand.targetLocation = clearOfCamera;
+      currentCommand.targetLocation = cameraInView;
       break;
     case PICKUP_COLONY:
       currentCommand.targetLocation.xCoordinate = Serial.parseFloat();
@@ -171,20 +171,44 @@ void getCommand() {
   moveEffector();
   currentLocation.xCoordinate = currentCommand.targetLocation.xCoordinate;
   currentLocation.yCoordinate = currentCommand.targetLocation.yCoordinate;
-  currentLocation.xCoordinate = currentCommand.targetLocation.xCoordinate;
-  currentLocation.yCoordinate = currentCommand.targetLocation.yCoordinate;
-  currentLocation.xCoordinate = currentCommand.targetLocation.xCoordinate;
-  currentLocation.yCoordinate = currentCommand.targetLocation.yCoordinate;
+  currentLocation.zCoordinate = currentCommand.targetLocation.zCoordinate;
+  currentLocation.eCoordinate = currentCommand.targetLocation.eCoordinate;
 }
 
 void sendDoneSignal() {
-  Serial.write(0b1000101);
+  Serial.print("X:");
+  Serial.print(currentLocation.xCoordinate);
+  Serial.print(", ");
+  Serial.print("Y:");
+  Serial.print(currentLocation.yCoordinate);
+  Serial.print(", ");
+  Serial.print("Z:");
+  Serial.print(currentLocation.zCoordinate);
+  Serial.print(", ");
+  Serial.print("E:");
+  Serial.println(currentLocation.eCoordinate);
 }
 
 void moveCarrige() {
-  xyController.rotate(currentCommand.targetLocation.xCoordinate - currentLocation.xCoordinate, currentCommand.targetLocation.yCoordinate - currentLocation.yCoordinate);
+  xyController.rotate(mmToRevs(currentCommand.targetLocation.xCoordinate - currentLocation.xCoordinate, 'x'), mmToRevs(currentCommand.targetLocation.yCoordinate - currentLocation.yCoordinate, 'y'));
 }
 
 void moveEffector() {
-  zeController.rotate(currentCommand.targetLocation.zCoordinate - currentLocation.zCoordinate, currentCommand.targetLocation.eCoordinate - currentLocation.eCoordinate);
+  zeController.rotate(mmToRevs(currentCommand.targetLocation.zCoordinate - currentLocation.zCoordinate, 'z'), mmToRevs(currentCommand.targetLocation.eCoordinate - currentLocation.eCoordinate, 'e'));
 }
+
+double mmToRevs(double mm, char axis) {
+  if(axis == 'x') {
+    return mm * X_REVS_PER_MM;
+  }
+  if(axis == 'y') {
+    return mm * Y_REVS_PER_MM;
+  }
+  if(axis == 'z') {
+    return mm * Z_REVS_PER_MM;
+  }
+  if(axis == 'e') {
+    return mm * E_REVS_PER_MM;
+  }
+}
+
