@@ -7,7 +7,7 @@
 //Xmax =
 //Ymax =
 //Zmax =
-//Emax = 
+//Emax =
 
 enum actions {HOME_AXIS, SET_HOME, GO_TO_LOCATION, GO_TO_HOME, GO_TO_CUTTER, HALT};
 
@@ -30,7 +30,7 @@ struct command
 #include "SyncDriver.h"
 
 #define X_MOTOR_STEPS 200
-#define X_RPM 133.333
+#define X_RPM 200
 #define X_MICROSTEPS 1
 #define X_DIR 55
 #define X_STEP 54
@@ -159,13 +159,22 @@ void loop() {
   if (done) {
     sendDoneSignal();
   }
+  if(!digitalRead(X_SWITCH)) {
+    xHome = false;
+  }
+  if(!digitalRead(Y_SWITCH)) {
+    yHome = false;
+  }
+  if(!digitalRead(Z_SWITCH)) {
+    zHome = false;
+  }
 }
 
 void getCommand() {
   currentCommand.operation = Serial.parseInt();
   switch (currentCommand.operation) {
     case HOME_AXIS:
-      homeAxis(Serial.parseInt());   
+      homeAxis(Serial.parseInt());
       break;
     case SET_HOME:
       currentLocation.xCoordinate = 0;
@@ -220,7 +229,7 @@ void moveEffector() {
 }
 
 double mmToRevs(double mm, char axis) {
-  switch (axis){
+  switch (axis) {
     case 'x':
       return mm * X_REVS_PER_MM;
     case 'y':
@@ -233,35 +242,47 @@ double mmToRevs(double mm, char axis) {
 }
 
 void homeAxis(int axis) {
-  switch (axis){
+  switch (axis) {
     case 0:
-      while(!xHome) {
-        Serial.println("x");
-        xMotor.rotate(-100);
+    xMotor.startRotate(-5000);
+      while (true) {
+        Serial.println("kek");
+        if (xHome) {
+          Serial.println("STOPPER REACHED");
+          xMotor.stop();
+          break;
+        }
+        unsigned wait_time_micros = xMotor.nextAction();
       }
-      xMotor.stop();
       currentLocation.xCoordinate = 0;
-      xHome = false;
       break;
     case 1:
-      while(!yHome) {
-        Serial.println("y");
-        yMotor.rotate(-100);
+    yMotor.startRotate(-5000);
+      while (true) {
+        if (yHome) {
+          Serial.println("STOPPER REACHED");
+          yMotor.stop();
+          break;
+        }
+        unsigned wait_time_micros = yMotor.nextAction();
       }
-      yMotor.stop();
       currentLocation.yCoordinate = 0;
       break;
     case 2:
-      while(!zHome) {
-        Serial.println("z");
-        zMotor.rotate(-100);
+    zMotor.startRotate(-5000);
+      while (true) {
+        if (zHome) {
+          Serial.println("STOPPER REACHED");
+          zMotor.stop();
+          break;
+        }
+        unsigned wait_time_micros = zMotor.nextAction();
       }
-      zMotor.stop();
       currentLocation.zCoordinate = 0;
       break;
     default: {
-      Serial.println("That's not an axis");
-      break;
-    }
+        Serial.println("That's not an axis");
+        break;
+      }
   }
 }
