@@ -58,7 +58,7 @@ int main()
 	vector<Point2f> chessboardCorners;
 
 	//populates chessboardCorners with points
-	getChessboardCorners(chessboard, chessboardCorners, false);
+	getChessboardCorners(chessboard, chessboardCorners, true);
 
 	//find pixel differences between corner points along rows and along columns
 	//put vector of points into 2d array to make for easier subtraction

@@ -5,21 +5,22 @@
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
 CALIBRATION_FILE	filenames.h	3;"	d
+CAL_SQUARE_EDGE	filenames.h	4;"	d
 CORRECTED_IMAGE	filenames.h	2;"	d
 DISTORTED_IMAGE	filenames.h	1;"	d
-calSquareEdge	calibrate.cpp	/^const float calSquareEdge = 0.0273f;$/;"	v
 cameraCalibration	calibrate.cpp	/^void cameraCalibration(vector<Mat> calibrationImages, Size boardSize, float squareEdgeLength, Mat& cameraMatrix, Mat& distanceCoefficients)$/;"	f
 chessboardDimensions	calibrate.cpp	/^const Size chessboardDimensions = Size(6,9);$/;"	v
 chessboardDimensions	fiducial.cpp	/^const Size chessboardDimensions = Size(numcols,numrows);$/;"	v
 createKnownBoardPositions	calibrate.cpp	/^void createKnownBoardPositions(Size boardSize, float squareEdgeLength, vector<Point3f>& corners)$/;"	f
 distanceBetweenPoints	fiducial.cpp	/^float distanceBetweenPoints(Point2f a, Point2f b)$/;"	f
+framesPerSecond	takeFiducialImage.cpp	/^const int framesPerSecond = 50;$/;"	v
 getChessboardCorners	calibrate.cpp	/^void getChessboardCorners(vector<Mat> images, vector<vector<Point2f> >& allFoundCorners, bool showResults = false)$/;"	f
 getChessboardCorners	fiducial.cpp	/^void getChessboardCorners(Mat image, vector<Point2f>& foundCorners, bool showResults)$/;"	f
 loadCameraCalibration	loadCalibration.cpp	/^bool loadCameraCalibration(string filename, Mat& cameraMatrix, Mat& distanceCoefficients)$/;"	f
 main	calibrate.cpp	/^int main(int argv, char** argc){$/;"	f
 main	fiducial.cpp	/^int main()$/;"	f
 main	loadCalibration.cpp	/^int main()$/;"	f
+main	takeFiducialImage.cpp	/^int main(int argv, char** argc){$/;"	f
 numcols	fiducial.cpp	/^const int numcols = 6;		$/;"	v
 numrows	fiducial.cpp	/^const int numrows = 9;		$/;"	v
-realCornerDistance	fiducial.cpp	/^const float realCornerDistance = 0.5; \/\/cm$/;"	v
 saveCameraCalibration	calibrate.cpp	/^bool saveCameraCalibration(string name, Mat cameraMatrix, Mat distanceCoefficients)$/;"	f

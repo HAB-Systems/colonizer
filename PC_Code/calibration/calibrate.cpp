@@ -179,6 +179,7 @@ int main(int argv, char** argc){
 	vector<Vec2f> foundPoints;
 
 	bool finished = false;
+	int numCornersFound = 0;
 
 	while(!finished){
 		if(!vid.read(frame))
@@ -210,7 +211,8 @@ int main(int argv, char** argc){
 			case ' ':
 				//if space, program found good corners, so save image
 				if(found){
-					cout << "corners found" << endl;
+					numCornersFound++;
+					cout << numCornersFound << ": corners found" << endl;
 					Mat temp;
 					frame.copyTo(temp);
 					savedImages.push_back(temp);

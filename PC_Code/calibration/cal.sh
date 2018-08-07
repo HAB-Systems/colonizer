@@ -1,5 +1,5 @@
 #!/bin/bash
 make
-./fidim
-./load
-./fid
+./takeFiducialImage
+./loadCalibration
+./fiducial
