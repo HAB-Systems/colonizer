@@ -71,7 +71,6 @@ struct command
 #define E_DIR 28
 #define E_STEP 26
 #define E_ENABLE 24
-#define E_SWITCH 19
 #define E_MS1 10
 #define E_MS2 11
 #define E_MS3 12
@@ -99,10 +98,9 @@ double yPosition;
 double zPosition;
 double ePosition;
 
-volatile bool xHome;
-volatile bool yHome;
-volatile bool zHome;
-volatile bool eHome;
+volatile bool xHome = false;
+volatile bool yHome = false;
+volatile bool zHome = false;
 
 A4988 xMotor(X_MOTOR_STEPS, X_DIR, X_STEP, X_ENABLE, X_MS1, X_MS2, X_MS3);
 A4988 yMotor(Y_MOTOR_STEPS, Y_DIR, Y_STEP, Y_ENABLE, Y_MS1, Y_MS2, Y_MS3);
@@ -118,7 +116,7 @@ location cutter = {0.0, 0.0, 0.0, 0.0};
 location cameraInView = {0.0, 0.0, 0.0, 0.0};
 location home = {0.0, 0.0, 0.0, 0.0};
 bool done = false;
-int homeDelay = 5;
+int homeDelay = 0;
 
 void xAxisSwitch() {
   xHome = true;
@@ -132,16 +130,11 @@ void zAxisSwitch() {
   zHome = true;
 }
 
-void eAxisSwitch() {
-  eHome = true;
-}
-
 void setup() {
   Serial.begin(9600);
   xMotor.begin(X_RPM, X_MICROSTEPS);
   yMotor.begin(Y_RPM, Y_MICROSTEPS);
   zMotor.begin(Z_RPM, Z_MICROSTEPS);
-  eMotor.begin(E_RPM, E_MICROSTEPS);
   xMotor.enable();
   xMotor.setSpeedProfile(xMotor.LINEAR_SPEED, X_ACCEL, X_DECEL);
   yMotor.enable();
@@ -153,7 +146,6 @@ void setup() {
   pinMode(X_SWITCH, INPUT_PULLUP); attachInterrupt(digitalPinToInterrupt(X_SWITCH), xAxisSwitch, FALLING);
   pinMode(Y_SWITCH, INPUT_PULLUP); attachInterrupt(digitalPinToInterrupt(Y_SWITCH), yAxisSwitch, FALLING);
   pinMode(Z_SWITCH, INPUT_PULLUP); attachInterrupt(digitalPinToInterrupt(Z_SWITCH), zAxisSwitch, FALLING);
-  pinMode(E_SWITCH, INPUT_PULLUP); attachInterrupt(digitalPinToInterrupt(E_SWITCH), eAxisSwitch, FALLING);
 }
 
 void loop() {
@@ -173,7 +165,7 @@ void getCommand() {
   currentCommand.operation = Serial.parseInt();
   switch (currentCommand.operation) {
     case HOME_AXIS:
-      homeAxis(Serial.parseInt());     
+      homeAxis(Serial.parseInt());   
       break;
     case SET_HOME:
       currentLocation.xCoordinate = 0;
@@ -240,35 +232,32 @@ double mmToRevs(double mm, char axis) {
   }
 }
 
-void homeAxis(char axis) {
+void homeAxis(int axis) {
   switch (axis){
-    case 'x':
-      while(xHome) {
-        xyController.rotate(1, 0);
-        delay(homeDelay);
+    case 0:
+      while(!xHome) {
+        Serial.println("x");
+        xMotor.rotate(-100);
       }
+      xMotor.stop();
       currentLocation.xCoordinate = 0;
+      xHome = false;
       break;
-    case 'y':
-      while(yHome) {
-        xyController.rotate(0, 1);
-        delay(homeDelay);
+    case 1:
+      while(!yHome) {
+        Serial.println("y");
+        yMotor.rotate(-100);
       }
+      yMotor.stop();
       currentLocation.yCoordinate = 0;
       break;
-    case 'z':
-      while(zHome) {
-        zeController.rotate(1, 0);
-        delay(homeDelay);
+    case 2:
+      while(!zHome) {
+        Serial.println("z");
+        zMotor.rotate(-100);
       }
+      zMotor.stop();
       currentLocation.zCoordinate = 0;
-      break;
-    case 'e':
-      while(eHome) {
-        zeController.rotate(0, 1);
-        delay(homeDelay);
-      }
-      currentLocation.eCoordinate = 0;
       break;
     default: {
       Serial.println("That's not an axis");
