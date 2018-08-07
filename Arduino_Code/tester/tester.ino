@@ -4,12 +4,12 @@
   Test everything
 */
 
-//Xmax = 75000
-//Ymax = 60000
-//Zmax = 6500
+//Xmax =
+//Ymax =
+//Zmax =
 //Emax = 
 
-enum actions {HOME, MOVE_FOR_CAMERA, PICKUP_COLONY, PLACE_COLONY, CUT_COLONY, HALT};
+enum actions {HOME_AXIS, SET_HOME, GO_TO_LOCATION, GO_TO_HOME, GO_TO_CUTTER, HALT};
 
 struct location
 {
@@ -30,26 +30,28 @@ struct command
 #include "SyncDriver.h"
 
 #define X_MOTOR_STEPS 200
-#define X_RPM 200
+#define X_RPM 133.333
 #define X_MICROSTEPS 1
 #define X_DIR 55
 #define X_STEP 54
 #define X_ENABLE 38
+#define X_SWITCH 2
 #define X_MS1 10
 #define X_MS2 11
 #define X_MS3 12
-#define X_REVS_PER_MM 0.03125
+#define X_REVS_PER_MM 3.33
 
 #define Y_MOTOR_STEPS 200
-#define Y_RPM 150
+#define Y_RPM 200
 #define Y_MICROSTEPS 1
 #define Y_DIR 48
 #define Y_STEP 46
 #define Y_ENABLE 62
+#define Y_SWITCH 3
 #define Y_MS1 10
 #define Y_MS2 11
 #define Y_MS3 12
-#define Y_REVS_PER_MM 0.03125
+#define Y_REVS_PER_MM 5.0
 
 #define Z_MOTOR_STEPS 200
 #define Z_RPM 150
@@ -57,10 +59,11 @@ struct command
 #define Z_DIR 34
 #define Z_STEP 36
 #define Z_ENABLE 30
+#define Z_SWITCH 18
 #define Z_MS1 10
 #define Z_MS2 11
 #define Z_MS3 12
-#define Z_REVS_PER_MM 0.5
+#define Z_REVS_PER_MM 100
 
 #define E_MOTOR_STEPS 200
 #define E_RPM 150
@@ -68,13 +71,14 @@ struct command
 #define E_DIR 28
 #define E_STEP 26
 #define E_ENABLE 24
+#define E_SWITCH 19
 #define E_MS1 10
 #define E_MS2 11
 #define E_MS3 12
-#define E_REVS_PER_MM 0.028937287
+#define E_REVS_PER_MM 5.7874574
 
-const int X_ACCEL = 1000;
-const int X_DECEL = 1000;
+const int X_ACCEL = 667;
+const int X_DECEL = 667;
 
 const int Y_ACCEL = 1000;
 const int Y_DECEL = 1000;
@@ -95,6 +99,11 @@ double yPosition;
 double zPosition;
 double ePosition;
 
+volatile bool xHome;
+volatile bool yHome;
+volatile bool zHome;
+volatile bool eHome;
+
 A4988 xMotor(X_MOTOR_STEPS, X_DIR, X_STEP, X_ENABLE, X_MS1, X_MS2, X_MS3);
 A4988 yMotor(Y_MOTOR_STEPS, Y_DIR, Y_STEP, Y_ENABLE, Y_MS1, Y_MS2, Y_MS3);
 A4988 zMotor(Z_MOTOR_STEPS, Z_DIR, Z_STEP, Z_ENABLE, Z_MS1, Z_MS2, Z_MS3);
@@ -109,6 +118,23 @@ location cutter = {0.0, 0.0, 0.0, 0.0};
 location cameraInView = {0.0, 0.0, 0.0, 0.0};
 location home = {0.0, 0.0, 0.0, 0.0};
 bool done = false;
+int homeDelay = 5;
+
+void xAxisSwitch() {
+  xHome = true;
+}
+
+void yAxisSwitch() {
+  yHome = true;
+}
+
+void zAxisSwitch() {
+  zHome = true;
+}
+
+void eAxisSwitch() {
+  eHome = true;
+}
 
 void setup() {
   Serial.begin(9600);
@@ -124,6 +150,10 @@ void setup() {
   zMotor.setSpeedProfile(zMotor.LINEAR_SPEED, Z_ACCEL, Z_DECEL);
   eMotor.enable();
   eMotor.setSpeedProfile(eMotor.LINEAR_SPEED, E_ACCEL, E_DECEL);
+  pinMode(X_SWITCH, INPUT_PULLUP); attachInterrupt(digitalPinToInterrupt(X_SWITCH), xAxisSwitch, FALLING);
+  pinMode(Y_SWITCH, INPUT_PULLUP); attachInterrupt(digitalPinToInterrupt(Y_SWITCH), yAxisSwitch, FALLING);
+  pinMode(Z_SWITCH, INPUT_PULLUP); attachInterrupt(digitalPinToInterrupt(Z_SWITCH), zAxisSwitch, FALLING);
+  pinMode(E_SWITCH, INPUT_PULLUP); attachInterrupt(digitalPinToInterrupt(E_SWITCH), eAxisSwitch, FALLING);
 }
 
 void loop() {
@@ -142,25 +172,25 @@ void loop() {
 void getCommand() {
   currentCommand.operation = Serial.parseInt();
   switch (currentCommand.operation) {
-    case HOME:
+    case HOME_AXIS:
+      homeAxis(Serial.parseInt());     
+      break;
+    case SET_HOME:
+      currentLocation.xCoordinate = 0;
+      currentLocation.yCoordinate = 0;
+      currentLocation.zCoordinate = 0;
+      currentLocation.eCoordinate = 0;
+      break;
+    case GO_TO_LOCATION:
+      currentCommand.targetLocation.xCoordinate = Serial.parseFloat();
+      currentCommand.targetLocation.yCoordinate = Serial.parseFloat();
+      currentCommand.targetLocation.zCoordinate = Serial.parseFloat();
+      currentCommand.targetLocation.eCoordinate = Serial.parseFloat();
+      break;
+    case GO_TO_HOME:
       currentCommand.targetLocation = home;
       break;
-    case MOVE_FOR_CAMERA:
-      currentCommand.targetLocation = cameraInView;
-      break;
-    case PICKUP_COLONY:
-      currentCommand.targetLocation.xCoordinate = Serial.parseFloat();
-      currentCommand.targetLocation.yCoordinate = Serial.parseFloat();
-      currentCommand.targetLocation.zCoordinate = Serial.parseFloat();
-      currentCommand.targetLocation.eCoordinate = Serial.parseFloat();
-      break;
-    case PLACE_COLONY:
-      currentCommand.targetLocation.xCoordinate = Serial.parseFloat();
-      currentCommand.targetLocation.yCoordinate = Serial.parseFloat();
-      currentCommand.targetLocation.zCoordinate = Serial.parseFloat();
-      currentCommand.targetLocation.eCoordinate = Serial.parseFloat();
-      break;
-    case CUT_COLONY:
+    case GO_TO_CUTTER:
       currentCommand.targetLocation = cutter;
       break;
     case HALT:
@@ -190,25 +220,59 @@ void sendDoneSignal() {
 }
 
 void moveCarrige() {
-  xyController.rotate(mmToRevs(currentCommand.targetLocation.xCoordinate - currentLocation.xCoordinate, 'x'), mmToRevs(currentCommand.targetLocation.yCoordinate - currentLocation.yCoordinate, 'y'));
+  xyController.rotate(mmToRevs(currentCommand.targetLocation.xCoordinate, 'x') - mmToRevs(currentLocation.xCoordinate, 'x'), mmToRevs(currentCommand.targetLocation.yCoordinate, 'y') - mmToRevs(currentLocation.yCoordinate, 'y'));
 }
 
 void moveEffector() {
-  zeController.rotate(mmToRevs(currentCommand.targetLocation.zCoordinate - currentLocation.zCoordinate, 'z'), mmToRevs(currentCommand.targetLocation.eCoordinate - currentLocation.eCoordinate, 'e'));
+  zeController.rotate(mmToRevs(currentCommand.targetLocation.zCoordinate, 'z') - mmToRevs(currentLocation.zCoordinate, 'z'), mmToRevs(currentCommand.targetLocation.eCoordinate, 'e') - mmToRevs(currentLocation.eCoordinate, 'e'));
 }
 
 double mmToRevs(double mm, char axis) {
-  if(axis == 'x') {
-    return mm * X_REVS_PER_MM;
-  }
-  if(axis == 'y') {
-    return mm * Y_REVS_PER_MM;
-  }
-  if(axis == 'z') {
-    return mm * Z_REVS_PER_MM;
-  }
-  if(axis == 'e') {
-    return mm * E_REVS_PER_MM;
+  switch (axis){
+    case 'x':
+      return mm * X_REVS_PER_MM;
+    case 'y':
+      return mm * X_REVS_PER_MM;
+    case 'z':
+      return mm * X_REVS_PER_MM;
+    case 'e':
+      return mm * X_REVS_PER_MM;
   }
 }
 
+void homeAxis(char axis) {
+  switch (axis){
+    case 'x':
+      while(xHome) {
+        xyController.rotate(1, 0);
+        delay(homeDelay);
+      }
+      currentLocation.xCoordinate = 0;
+      break;
+    case 'y':
+      while(yHome) {
+        xyController.rotate(0, 1);
+        delay(homeDelay);
+      }
+      currentLocation.yCoordinate = 0;
+      break;
+    case 'z':
+      while(zHome) {
+        zeController.rotate(1, 0);
+        delay(homeDelay);
+      }
+      currentLocation.zCoordinate = 0;
+      break;
+    case 'e':
+      while(eHome) {
+        zeController.rotate(0, 1);
+        delay(homeDelay);
+      }
+      currentLocation.eCoordinate = 0;
+      break;
+    default: {
+      Serial.println("That's not an axis");
+      break;
+    }
+  }
+}
