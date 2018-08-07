@@ -77,7 +77,7 @@ int main()
 	loadCameraCalibration(CALIBRATION_FILE, cameraMatrix, distanceCoefficients);
 
 	//reads original image from file
-	Mat distorted = imread(DISTORTED_IMAGE, CV_LOAD_IMAGE_COLOR);
+	Mat distorted = imread(DISTORTED_IMAGE, CV_LOAD_IMAGE_GRAYSCALE);
 
 	//shows original (before correction) image
 	imshow("distorted", distorted);
@@ -92,6 +92,37 @@ int main()
 	
 	//shows corrected image
 	imshow("corrected", corrected);
+
+	/*
+	shows the difference between distorted and corrected
+	*/
+	
+	Mat distortedbw;
+	Mat correctedbw;
+
+	double thresh;
+
+	//thresholds images to black and white
+	thresh = threshold(distorted, distortedbw, 100, 255, THRESH_BINARY);
+	thresh = threshold(corrected, correctedbw, 100, 255, THRESH_BINARY);
+
+	Mat difference = correctedbw.clone();
+	
+	//shows pixels where two images are not equivalent in white
+	for(int r = 0; r < distorted.rows; r++){
+		for(int c = 0; c < distorted.cols; c++){
+			if(distortedbw.at<uint8_t>(r,c) == correctedbw.at<uint8_t>(r,c))
+				difference.at<uint8_t>(r,c) = 0;
+			else
+				difference.at<uint8_t>(r,c) = 255;
+
+		}
+	}
+
+	imshow("difference", difference);
 	waitKey();
+	
+
+
 
 }
