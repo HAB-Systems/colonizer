@@ -98,9 +98,7 @@ double yPosition;
 double zPosition;
 double ePosition;
 
-volatile bool xHome = false;
-volatile bool yHome = false;
-volatile bool zHome = false;
+volatile bool homing = false;
 
 A4988 xMotor(X_MOTOR_STEPS, X_DIR, X_STEP, X_ENABLE, X_MS1, X_MS2, X_MS3);
 A4988 yMotor(Y_MOTOR_STEPS, Y_DIR, Y_STEP, Y_ENABLE, Y_MS1, Y_MS2, Y_MS3);
@@ -119,15 +117,21 @@ bool done = false;
 int homeDelay = 0;
 
 void xAxisSwitch() {
-  xHome = true;
+  if (homing) {
+    xMotor.stop();
+  }
 }
 
 void yAxisSwitch() {
-  yHome = true;
+  if (homing) {
+    yMotor.stop();
+  }
 }
 
 void zAxisSwitch() {
-  zHome = true;
+  if (homing) {
+    zMotor.stop();
+  }
 }
 
 void setup() {
@@ -158,15 +162,6 @@ void loop() {
   }
   if (done) {
     sendDoneSignal();
-  }
-  if(!digitalRead(X_SWITCH)) {
-    xHome = false;
-  }
-  if(!digitalRead(Y_SWITCH)) {
-    yHome = false;
-  }
-  if(!digitalRead(Z_SWITCH)) {
-    zHome = false;
   }
 }
 
@@ -242,46 +237,25 @@ double mmToRevs(double mm, char axis) {
 }
 
 void homeAxis(int axis) {
+  homing = true;
   switch (axis) {
     case 0:
-    xMotor.startRotate(-5000);
-      while (true) {
-        Serial.println("kek");
-        if (xHome) {
-          Serial.println("STOPPER REACHED");
-          xMotor.stop();
-          break;
-        }
-        unsigned wait_time_micros = xMotor.nextAction();
-      }
+      xMotor.rotate(-5000);
+      homing = false;
       currentLocation.xCoordinate = 0;
       break;
     case 1:
-    yMotor.startRotate(-5000);
-      while (true) {
-        if (yHome) {
-          Serial.println("STOPPER REACHED");
-          yMotor.stop();
-          break;
-        }
-        unsigned wait_time_micros = yMotor.nextAction();
-      }
+      yMotor.rotate(-5000);
+      homing = false;
       currentLocation.yCoordinate = 0;
       break;
     case 2:
-    zMotor.startRotate(-5000);
-      while (true) {
-        if (zHome) {
-          Serial.println("STOPPER REACHED");
-          zMotor.stop();
-          break;
-        }
-        unsigned wait_time_micros = zMotor.nextAction();
-      }
+      zMotor.rotate(5000);
+      homing = false;
       currentLocation.zCoordinate = 0;
       break;
     default: {
-        Serial.println("That's not an axis");
+        Serial.println("That's not an axis!");
         break;
       }
   }
