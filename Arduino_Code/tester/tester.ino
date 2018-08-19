@@ -1,26 +1,25 @@
 /*
-  TODO:
-  Add speed changing?
-  Test everything
+ * Double check before running:
+ *  cutterPin should be 10 if using the built in RAMPS MOSFET, and 16 (or other) if using an auxiliary transistor
+ *  The Z axis moves starting at 0 (home) and moves down, so DON'T USE POSITIVE NUMBERS. It will go up.
+ *  
+ * To Do:
+ *  Limit detection while running
+ *  Cutter mechanism control using onboard RAMPS MOSFET
+ *  Cutter constants (offset to get to cutter)
+ *  Other constants (X Y and Z max)
 */
 
-//Xmax =
-//Ymax =
-//Zmax =
-//Emax =
+enum actions {HOME_AXIS, SET_HOME, GO_TO_LOCATION, GO_TO_HOME, GO_TO_CUTTER, CUT, HALT};
 
-enum actions {HOME_AXIS, SET_HOME, GO_TO_LOCATION, GO_TO_HOME, GO_TO_CUTTER, HALT};
-
-struct location
-{
+struct location {
   double xCoordinate;
   double yCoordinate;
   double zCoordinate;
   double eCoordinate;
 };
 
-struct command
-{
+struct command {
   actions operation;
   location targetLocation;
 };
@@ -88,6 +87,9 @@ const int Z_DECEL = 1000;
 const int E_ACCEL = 1000;
 const int E_DECEL = 1000;
 
+const int cutterPin = 16;
+const int cutterDelay = 200;
+
 bool xComplete = false;
 bool yComplete = false;
 bool zComplete = false;
@@ -150,6 +152,8 @@ void setup() {
   pinMode(X_SWITCH, INPUT_PULLUP); attachInterrupt(digitalPinToInterrupt(X_SWITCH), xAxisSwitch, FALLING);
   pinMode(Y_SWITCH, INPUT_PULLUP); attachInterrupt(digitalPinToInterrupt(Y_SWITCH), yAxisSwitch, FALLING);
   pinMode(Z_SWITCH, INPUT_PULLUP); attachInterrupt(digitalPinToInterrupt(Z_SWITCH), zAxisSwitch, FALLING);
+  pinMode(cutterPin, OUTPUT);
+  digitalWrite(cutterPin, LOW);
 }
 
 void loop() {
@@ -188,6 +192,9 @@ void getCommand() {
       break;
     case GO_TO_CUTTER:
       currentCommand.targetLocation = cutter;
+      break;
+    case CUT:
+      cut();
       break;
     case HALT:
       currentCommand.targetLocation = currentLocation;
@@ -234,6 +241,12 @@ double mmToRevs(double mm, char axis) {
     case 'e':
       return mm * X_REVS_PER_MM;
   }
+}
+
+void cut() {
+  digitalWrite(cutterPin, HIGH);
+  delay(cutterDelay);
+  digitalWrite(cutterPin, LOW);
 }
 
 void homeAxis(int axis) {
