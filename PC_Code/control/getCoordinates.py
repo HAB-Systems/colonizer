@@ -3,21 +3,19 @@
 import csv
 import sys
 
-#first argument is input file, second argument is output file
-inputfile = str(sys.argv[1])
-outputfile = str(sys.argv[2])
+inputfile = "my_results.csv" 
+outputfile = "coordinates.csv"
 
 fread = open(inputfile, "r")
 reader = csv.reader(fread)
 data = list(reader)
 
 #second and third columns are x and y coordinates
-coordinates = [sublist[1:3] for sublist in data]
+coordinates = [sublist[2:4] for sublist in data]
 
-#writes coordinates to coordinates.txt
+#writes coordinates to coordinates.csv
 fwrite = open(outputfile, "w")
-a = 2
-for cpair in coordinates:
+for cpair in coordinates[1:]:
 	fwrite.write(cpair[0] + "," + cpair[1] + "\n")
 
 fwrite.close()

@@ -1,3 +1,11 @@
+/********************************
+ Inputs image corrected by loadCalibration.cpp
+ Finds chessboard corners on that image
+ Uses known distances between chessboard corners to find pixel-to-cm ratio
+ Scales list of colony coordinates from OpenCFU using this ratio
+ Uses top left chessboard corner to calibrate image translation
+ Applies image translation to list of coordinates
+ *********************************/
 #include "opencv2/opencv.hpp"
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
@@ -9,6 +17,7 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <string>
 
 #include "filenames.h"
 
@@ -48,7 +57,6 @@ void getChessboardCorners(Mat image, vector<Point2f>& foundCorners, bool showRes
 		imshow("Corners", image);
 		waitKey();
 	}
-	
 }
 
 int main()
@@ -60,6 +68,11 @@ int main()
 	//populates chessboardCorners with points
 	getChessboardCorners(chessboard, chessboardCorners, true);
 
+	//first corner in vector is upper left corner
+	int upperLeftX = chessboardCorners.at(0).x;
+	int upperLeftY = chessboardCorners.at(0).y;
+	 
+/*
 	//find pixel differences between corner points along rows and along columns
 	//put vector of points into 2d array to make for easier subtraction
 	Point2f cornerMatrix[numrows][numcols];
@@ -113,7 +126,50 @@ int main()
 
 	//divides by real distance between corners to find pixels per cm 
 	float pixelsPerCm = averageDistance/CAL_SQUARE_EDGE;
-   	cout << "Pixels per cm:\t" << pixelsPerCm << endl;	
+		cout << "Pixels per cm:\t" << pixelsPerCm << endl;	
+	*/
+	//---------------------------------------------------------------
+	
+		//finds translation between real upper left corner and image upper left corner
+		int xdiff = REAL_X_COORDINATE - upperLeftX;
+		int ydiff = REAL_Y_COORDINATE - upperLeftY;
+		//file containing raw coordinates from OpenCFU (via getCoordinates.py)
+		ifstream input_file;
+		input_file.open(COORDINATE_FILE);
 
+		//file to write corrected coordinates to
+		ofstream output_file;
+		output_file.open(CORRECTED_COORDINATE_FILE);
+
+		//translates and dilates coordinates
+		if(input_file.is_open() && output_file.is_open())
+		{
+			//string to temporarily hold numbers read from file
+			string coordinate;
+			
+			//loops through file
+			//first getline() gets x coordinate (before ,)
+			while(getline(input_file, coordinate, ','))
+			{
+				//converts x to float
+				float x = stof(coordinate);
+				
+				//gets rest of line (y coordinate), converts to float
+				getline(input_file, coordinate);
+				float y = stof(coordinate);
+
+				//converts x and y to units of cm and applies translation 
+				x = (x-xdiff)*100;
+				y = (y-ydiff)*0.01;
+
+				output_file << to_string(x) << "," << to_string(y) << endl;
+		}
+
+		input_file.close();
+
+
+	}
+	//if file not found		
+	else cout << "File not found\n";
 
 }

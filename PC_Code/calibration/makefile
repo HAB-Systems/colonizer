@@ -5,7 +5,7 @@ cal:
 load:
 	g++ loadCalibration.cpp -o loadCalibration `pkg-config --cflags --libs opencv`
 fid:
-	g++ fiducial.cpp -o fiducial `pkg-config --cflags --libs opencv`
+	g++ -std=c++11 fiducial.cpp -o fiducial `pkg-config --cflags --libs opencv`
 fidim:
 	g++ takeFiducialImage.cpp -o takeFiducialImage `pkg-config --cflags --libs opencv`
 
